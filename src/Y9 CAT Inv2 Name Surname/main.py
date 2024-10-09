@@ -1,4 +1,5 @@
 from matplotlib import pyplot as grapher
+import random
 
 def read_file(file):
     with open(file, 'r') as f:
@@ -94,11 +95,72 @@ def plot_pair_frequencies(sorted_pairs, quantity):
 def filter_pairs_by_starting_letter(letter, pair_counts):
     return [(pair, counts) for pair, counts in pair_counts.items() if pair[0] == letter]
 
+def simulate_rigged_coin_flip():
+    odds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    odds_roll = random.choice(odds)
+
+    if odds_roll <= 8:
+        flipped_coin = 'tails'
+    else:
+        flipped_coin = 'heads'
+
+    return flipped_coin
+
+
+def rigged_coin_flip_unit_test(quantity):
+    results = []
+    for i in range(quantity):
+        results.append(str(simulate_rigged_coin_flip()))
+
+    heads = results.count('heads')
+    tails = results.count('tails')
+
+    heads_perc = heads / quantity * 100
+    tails_perc = tails / quantity * 100
+
+    return f'Heads: {heads_perc:.2f}%, Tails: {tails_perc:.2f}%'
+
+
+def simulate_rigged_spinner():
+    odds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    odds_roll = random.choice(odds)
+
+    if odds_roll <= 2:
+        spun_side = 0
+    elif 2 < odds_roll <= 3:
+        spun_side = 1
+    elif 3 < odds_roll <= 4:
+        spun_side = 2
+    else:
+        spun_side = 3
+
+    return spun_side
+
+
+def rigged_spinner_unit_test(quantity):
+    results = []
+    for i in range(quantity):
+        results.append(int(simulate_rigged_spinner()))
+
+    zeros = results.count(0)
+    ones = results.count(1)
+    twos = results.count(2)
+    threes = results.count(3)
+
+    zeros_perc = zeros / quantity * 100
+    ones_perc = ones / quantity * 100
+    twos_perc = twos / quantity * 100
+    threes_perc = threes / quantity * 100
+
+    return f'Zeros: {zeros_perc:.2f}%, Ones: {ones_perc:.2f}%, Twos: {twos_perc:.2f}%, Threes: {threes_perc:.2f}%'
+
 file_path = 'names.txt'
 
 a, b, c = count_from_names(read_file(file_path))
 write_pair_freqs_to_file(a)
 write_sorted_pair_to_file(a)
 print(read_file(file_path))
-print(plot_pair_frequencies(sorted(a.items(), key=lambda x: x[0][0]), 50))
+plot_pair_frequencies(sorted(a.items(), key=lambda x: x[0][0]), 50)
 print(filter_pairs_by_starting_letter('f', a))
+print(rigged_coin_flip_unit_test(100))
+print(rigged_spinner_unit_test(100))
