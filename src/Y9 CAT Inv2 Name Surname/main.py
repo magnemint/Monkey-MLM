@@ -1,3 +1,5 @@
+import math
+
 from matplotlib import pyplot as grapher
 import random
 
@@ -154,9 +156,50 @@ def rigged_spinner_unit_test(quantity):
 
     return f'Zeros: {zeros_perc:.2f}%, Ones: {ones_perc:.2f}%, Twos: {twos_perc:.2f}%, Threes: {threes_perc:.2f}%'
 
+
+def compute_pair_probabilities(pair_counts):
+    total_count = sum(pair_counts.values())
+    probabilities = {pair: count / total_count * 100 for pair, count in pair_counts.items()}
+    return probabilities
+
+
+def sample_pair(probabilities):
+    pairs, probs = zip(*probabilities.items())
+    return random.choices(pairs, weights=probs, k=1)[0]
+
+
+def generate_name(start_letter, second_letter, pair_probabilities):
+    start_letter = start_letter.lower()
+    if second_letter:
+        second_letter = second_letter.lower()
+
+    name = start_letter
+    current_letter = start_letter
+
+    if second_letter:
+        name += second_letter
+        current_letter = second_letter
+
+    max_length = random.randint(3, 9)
+
+    while len(name) < max_length:
+        possible_pairs = {pair: prob for pair, prob in pair_probabilities.items() if pair[0] == current_letter}
+
+        if not possible_pairs:
+            break
+
+        next_pair = sample_pair(possible_pairs)
+        next_letter = next_pair[1]
+        name += next_letter
+        current_letter = next_letter
+
+    return name
+
+
 file_path = 'names.txt'
 
 a, b, c = count_from_names(read_file(file_path))
+d = compute_pair_probabilities(a)
 write_pair_freqs_to_file(a)
 write_sorted_pair_to_file(a)
 print(read_file(file_path))
@@ -164,3 +207,5 @@ plot_pair_frequencies(sorted(a.items(), key=lambda x: x[0][0]), 50)
 print(filter_pairs_by_starting_letter('f', a))
 print(rigged_coin_flip_unit_test(100))
 print(rigged_spinner_unit_test(100))
+print(d)
+print(generate_name('a', '', d))
