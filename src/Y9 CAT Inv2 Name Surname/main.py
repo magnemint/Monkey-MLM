@@ -1,7 +1,61 @@
-import math
-
 from matplotlib import pyplot as grapher
 import random
+import string
+
+def set_style(style, text, end):
+    style = style.upper()
+
+    match style:
+        case 'BLACK':
+            style = "\033[0;30m"
+        case 'RED':
+            style = "\033[0;31m"
+        case 'GREEN':
+            style = "\033[0;32m"
+        case 'BROWN':
+            style = "\033[0;33m"
+        case 'BLUE':
+            style = "\033[0;34m"
+        case 'PURPLE':
+            style = "\033[0;35m"
+        case 'CYAN':
+            style = "\033[0;36m"
+        case 'LIGHT_GRAY':
+            style = "\033[0;37m"
+        case 'DARK_GRAY':
+            style = "\033[1;30m"
+        case 'LIGHT_RED':
+            style = "\033[1;31m"
+        case 'LIGHT_GREEN':
+            style = "\033[1;32m"
+        case 'YELLOW':
+            style = "\033[1;33m"
+        case 'LIGHT_BLUE':
+            style = "\033[1;34m"
+        case 'LIGHT_PURPLE':
+            style = "\033[1;35m"
+        case 'LIGHT_CYAN':
+            style = "\033[1;36m"
+        case 'LIGHT_WHITE':
+            style = "\033[1;37m"
+        case 'BOLD':
+            style = "\033[1m"
+        case 'FAINT':
+            style = "\033[2m"
+        case 'ITALIC':
+            style = "\033[3m"
+        case 'UNDERLINE':
+            style = "\033[4m"
+        case 'BLINK':
+            style = "\033[5m"
+        case 'NEGATIVE':
+            style = "\033[7m"
+        case 'CROSSED':
+            style = "\033[9m"
+        case 'END':
+            style = "\033[0m"
+    print(f'{style}{text}\033[0m', end=end)
+
 
 def read_file(file):
     with open(file, 'r') as f:
@@ -23,7 +77,16 @@ def return_longest_and_shortest_names(file):
     longest_names_str = ', '.join(longest_names)
     shortest_names_str = ', '.join(shortest_names)
 
-    return f'The longest names are {longest_names_str}and the shortest\nnames are {shortest_names_str}.'
+    return f'The longest names are {longest_names_str},\nAnd the shortest names are {shortest_names_str}.'
+
+
+def get_file_stats(file_path):
+    entries = len(read_file(file_path))
+
+    long_short_str = return_longest_and_shortest_names(file_path)
+
+    return f'There are {entries} names in the dataset.\n{long_short_str}'
+
 
 def process_name(name):
     name = name.lower()
@@ -163,49 +226,172 @@ def compute_pair_probabilities(pair_counts):
     return probabilities
 
 
-def sample_pair(probabilities):
-    pairs, probs = zip(*probabilities.items())
-    return random.choices(pairs, weights=probs, k=1)[0]
+def sample_pair(probabilities, trained=False):
+    if trained is True:
+        pairs, probs = zip(*probabilities.items())
+        return random.choices(pairs, weights=probs, k=1)[0]
+    else:
+        return random.choice('abcdefghijklmnopqrstuvwxyz')
 
 
-def generate_name(start_letter, second_letter, pair_probabilities):
-    start_letter = start_letter.lower()
-    if second_letter:
-        second_letter = second_letter.lower()
+def generate_name(start_letter, second_letter, pair_probabilities=None):
+    if pair_probabilities is not None:
+        start_letter = start_letter.lower()
+        if second_letter:
+            second_letter = second_letter.lower()
 
-    name = start_letter
-    current_letter = start_letter
+        name = start_letter
+        current_letter = start_letter
 
-    if second_letter:
-        name += second_letter
-        current_letter = second_letter
+        if second_letter:
+            name += second_letter
+            current_letter = second_letter
 
-    max_length = random.randint(3, 9)
+        max_length = random.randint(3, 9)
 
-    while len(name) < max_length:
-        possible_pairs = {pair: prob for pair, prob in pair_probabilities.items() if pair[0] == current_letter}
+        while len(name) < max_length:
+            possible_pairs = {pair: prob for pair, prob in pair_probabilities.items() if pair[0] == current_letter}
 
-        if not possible_pairs:
-            break
+            if not possible_pairs:
+                break
 
-        next_pair = sample_pair(possible_pairs)
-        next_letter = next_pair[1]
-        name += next_letter
-        current_letter = next_letter
+            next_pair = sample_pair(possible_pairs, True)
+            next_letter = next_pair[1]
+            name += next_letter
+            current_letter = next_letter
 
-    return name
+        return name
+    else:
+        start_letter = start_letter.lower()
+        if second_letter:
+            second_letter = second_letter.lower()
+
+        name = start_letter
+
+        if second_letter:
+            name += second_letter
+            current_letter = second_letter
+
+        max_length = random.randint(3, 9)
+
+        while len(name) < max_length:
+            next_letter = random.choice(string.ascii_lowercase)
+            name += next_letter
+            current_letter = next_letter
+
+        return name
 
 
-file_path = 'names.txt'
+def evaluate_name_likelihood(name, pair_probabilities):
+    name = name.lower()
+    pairs = [(name[i], name[i + 1]) for i in range(len(name) - 1)]
 
-a, b, c = count_from_names(read_file(file_path))
-d = compute_pair_probabilities(a)
-write_pair_freqs_to_file(a)
-write_sorted_pair_to_file(a)
-print(read_file(file_path))
-plot_pair_frequencies(sorted(a.items(), key=lambda x: x[0][0]), 50)
-print(filter_pairs_by_starting_letter('f', a))
-print(rigged_coin_flip_unit_test(100))
-print(rigged_spinner_unit_test(100))
-print(d)
-print(generate_name('a', '', d))
+    # Collect probabilities for each pair
+    pair_probs = {}
+    for pair in pairs:
+        prob = pair_probabilities.get(pair, 0)
+        pair_probs[pair] = prob  # Use 0 if the pair does not exist in probabilities
+
+    return pair_probs
+
+
+def compare_name_against_model(name, pair_probabilities):
+    pair_probs = evaluate_name_likelihood(name, pair_probabilities)
+    set_style('cyan', f"Pair probabilities for the name '{name}':", '\n')
+
+    for pair, prob in pair_probs.items():
+        set_style('green', f"Probability of pair {pair}: {prob:.2f}%", '\n')
+
+
+def prompt(file_location):
+    prompt_text = '''    (1) Basic statistics (number of names, shortest, longest, etc.)
+    (2) Display the first _ lines of the sorted pairs frequency table
+    (3) Display pairs starting with a particular character
+    (4) Flip the coin and demonstrate correctness
+    (5) Spin the numbered wheel and demonstrate correctness
+    (6) Generate _ new names starting with letter _
+    (7) Generate _ random names
+    (8) Demonstrate the result of an untrained character-pair frequency table
+    (9) Evaluate a name against the model by printing its pair probabilities'''
+    set_style('end', 'Use the menu below to explore the features of \033[1mMonkeyMLM\033[0m:', '\n')
+    set_style('cyan', prompt_text, '\n')
+
+    while True:
+        action = input(
+            'Enter \033[1m1\033[0m to \033[1m9\033[0m, \033[1m0\033[0m to quit, or \033[1m-\033[0m to print the options \033[4magain\033[0m: ')
+        match(action):
+            case '0':
+                set_style('cyan', 'Thank you for using MonkeyMLM, have a great day!', '')
+                break
+            case '-':
+                set_style('cyan', prompt_text, '\n')
+            case '1':
+                stats = input('Would you like to see the statistics of the dataset? (Y/N) ').lower()
+                graph = input('Would you like to see a graph of the pair frequencies in the dataset? (Y/N) ').lower()
+
+                if stats == 'y':
+                    set_style('blue', get_file_stats(file_location), '\n')
+
+                if graph == 'y':
+                    quantity = int(input('How many pairs would you like to see? '))
+                    entries = read_file(file_location)
+                    pair_counts, _, _ = count_from_names(entries)
+                    sorted_pairs = sorted(pair_counts.items(), key=lambda x: x[1], reverse=True)
+                    plot_pair_frequencies(sorted_pairs, quantity)
+            case '2':
+                entries = read_file(file_location)
+                pair_counts, _, _ = count_from_names(entries)
+                sorted_pairs = sorted(pair_counts.items(), key=lambda x: x[1], reverse=True)
+                n = int(input("How many lines would you like to display? "))
+                for pair, count in sorted_pairs[:n]:
+                    set_style('green', f'{pair}: {count}', '\n')
+            case '3':
+                letter = input("Enter the starting letter: ").lower()
+                entries = read_file(file_location)
+                pair_counts, _, _ = count_from_names(entries)
+                sorted_filtered_pairs = filter_pairs_by_starting_letter(letter, pair_counts)
+                for pair, count in sorted_filtered_pairs:
+                    set_style('green', f'{pair}: {count}', '\n')
+            case '4':
+                quantity = int(input("How many coin flips to test? "))
+                set_style('blue', rigged_coin_flip_unit_test(quantity), '\n')
+            case '5':
+                quantity = int(input("How many spins to test? "))
+                set_style('blue', rigged_spinner_unit_test(quantity), '\n')
+            case '6':
+                quantity = int(input("How many names would you like to generate? "))
+                start_letter = input("Enter the starting letter: ").lower()
+                second_letter = input("Enter the second letter (leave blank if not necessary): ").lower()
+                entries = read_file(file_location)
+                pair_counts, _, _ = count_from_names(entries)
+                pair_probabilities = compute_pair_probabilities(pair_counts)
+                for _ in range(quantity):
+                    generated_name = generate_name(start_letter, second_letter, pair_probabilities)
+                    set_style('blue', f'Generated name: {generated_name}', '\n')
+            case '7':
+                quantity = int(input("How many random names would you like to generate? "))
+                entries = read_file(file_location)
+                pair_counts, _, _ = count_from_names(entries)
+                pair_probabilities = compute_pair_probabilities(pair_counts)
+                for _ in range(quantity):
+                    start_letter = random.choice(string.ascii_lowercase)
+                    generated_name = generate_name(start_letter, '', pair_probabilities)
+                    set_style('blue', f'Generated name: {generated_name}', '\n')
+            case '8':
+                quantity = int(input("How many random names would you like to generate? "))
+                set_style('yellow', 'The following names used an un-trained frequency table', '\n')
+                for _ in range(quantity):
+                    start_letter = random.choice(string.ascii_lowercase)
+                    generated_name = generate_name(start_letter, '')
+                    set_style('blue', f'Generated name: {generated_name}', '\n')
+            case '9':
+                name = input("Please enter the name to evaluate: ")
+                entries = read_file(file_location)
+                pair_counts, _, _ = count_from_names(entries)
+                pair_probabilities = compute_pair_probabilities(pair_counts)
+                print(pair_probabilities)
+                compare_name_against_model(name, pair_probabilities)
+
+if __name__ == "__main__":
+    file = 'names.txt'
+    prompt(file)
