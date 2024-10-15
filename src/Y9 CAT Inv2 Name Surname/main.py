@@ -476,7 +476,6 @@ def prompt(file_location):
                 entries = read_file(file_location)
                 pair_counts, _, _ = count_from_names(entries)
                 pair_probabilities = compute_pair_probabilities(pair_counts)
-                print(pair_probabilities)
                 compare_name_against_model(name, pair_probabilities)
 
 if __name__ == "__main__":
